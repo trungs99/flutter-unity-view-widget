@@ -26,7 +26,7 @@ class OverrideUnityActivity : UnityPlayerActivity() {
     }
 
     private fun quitPlayer() {
-        mUnityPlayer?.quit()
+        mUnityPlayer?.destroy()
     }
 
     private fun showMainActivity() {
@@ -42,7 +42,6 @@ class OverrideUnityActivity : UnityPlayerActivity() {
 
     override fun onLowMemory() {
         super.onLowMemory()
-        mUnityPlayer?.lowMemory()
     }
 
     override fun onNewIntent(intent: Intent) {

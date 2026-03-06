@@ -11,6 +11,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.Choreographer
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
@@ -22,6 +23,7 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.platform.PlatformView
+import com.xraph.plugin.flutter_unity_widget.utils.copy
 
 
 @SuppressLint("NewApi")
@@ -56,7 +58,27 @@ class FlutterUnityWidgetController(
         var tempContext = UnityPlayerUtils.activity as Context
         if (context != null) tempContext = context
         // set layout view
-        view = FrameLayout(tempContext)
+        view = object : FrameLayout(tempContext) {
+            override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+                ev.source = android.view.InputDevice.SOURCE_TOUCHSCREEN
+                return super.dispatchTouchEvent(ev)
+            }
+
+            @SuppressLint("ClickableViewAccessibility")
+            override fun onTouchEvent(event: MotionEvent?): Boolean{
+                if (event == null) return false
+
+                event.source = android.view.InputDevice.SOURCE_TOUCHSCREEN
+                
+                if (event.deviceId == 0) {        
+                    val modifiedEvent = event.copy(deviceId = -1)
+                    event.recycle()
+                    return super.onTouchEvent(modifiedEvent)
+                } else {
+                    return super.onTouchEvent(event)
+                }
+            }
+        }
         view.setBackgroundColor(Color.TRANSPARENT)
 
         // setup method channel
@@ -334,12 +356,12 @@ class FlutterUnityWidgetController(
         if (UnityPlayerUtils.unityPlayer == null) return
         Log.d(LOG_TAG, "Attaching unity to view")
 
-        if (UnityPlayerUtils.unityPlayer!!.parent != null) {
-            (UnityPlayerUtils.unityPlayer!!.parent as ViewGroup).removeView(UnityPlayerUtils.unityPlayer)
+        if (UnityPlayerUtils.unityPlayer!!.frameLayout?.parent != null) {
+            (UnityPlayerUtils.unityPlayer!!.frameLayout?.parent as? ViewGroup)?.removeView(UnityPlayerUtils.unityPlayer!!.frameLayout)
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            UnityPlayerUtils.unityPlayer!!.z = -1f
+            UnityPlayerUtils.unityPlayer!!.frameLayout?.z = -1f
         }
 
         // add unity to view
@@ -356,7 +378,7 @@ class FlutterUnityWidgetController(
     }
 
     fun reattachToView() {
-        if (UnityPlayerUtils.unityPlayer!!.parent != view) {
+        if (UnityPlayerUtils.unityPlayer!!.frameLayout?.parent != view) {
             this.attachToView()
             Handler(Looper.getMainLooper()).post {
                 methodChannel.invokeMethod("events#onViewReattached", null)

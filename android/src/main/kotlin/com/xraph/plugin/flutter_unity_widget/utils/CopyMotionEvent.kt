@@ -1,6 +1,6 @@
 // source https://gist.github.com/sebschaef/b803da53217c88e8c691aeed08602193
 
-package com.xraph.plugin.flutter_unity_widget
+package com.xraph.plugin.flutter_unity_widget.utils
 
 import android.view.MotionEvent
 
